@@ -38,7 +38,7 @@ app.use("/api/barberX/Customer/services",CustomerService);
 const CustomerBooking = require("./routes/customer/Booking.route.js");
 app.use("/api/barberX/Customer/Booking" , CustomerBooking);
 
-const port = process.env.port;
+const port = process.env.port || 3000;
 app.listen(port,()=>{
     console.log(`Server is running Built by ~harshu running on port ${port}`);
 }) 
