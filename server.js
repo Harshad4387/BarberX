@@ -14,7 +14,7 @@ app.use(cors({
 connect();
 
 app.get("/" , async(req,res) => {
-    res.status(200).json("Server is running fine");
+    res.status(200).json("Server is running fine Built By Harshad Jogdande");
 })
 
 const auth = require("./routes/auth.route.js");
