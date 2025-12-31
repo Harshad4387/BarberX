@@ -45,7 +45,6 @@ const addService = async (req, res) => {
   }
 };
 
-
 const updateService = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -128,39 +127,40 @@ const deleteService = async (req, res) => {
     });
   }
 };
-
 const getMyServices = async (req, res) => {
   try {
- 
-    const userId = req.user._id;
+    const userId = req.user.id;
 
-
-    const barber = await Barber.findOne({ userId });
-    if (!barber) {
-      return res.status(404).json({
-        message: "Barber profile not found"
+    if (req.user.role !== "barber") {
+      return res.status(403).json({
+        message: "Access denied",
       });
     }
 
-   
+    // 1️⃣ Find barber by userId
+    const barber = await Barber.findOne({ userId });
+    if (!barber) {
+      return res.status(404).json({
+        message: "Barber profile not found",
+      });
+    }
+
     const services = await BarberService.find({
       barberId: barber._id,
-      isActive: true
+      isActive: true,
     }).sort({ createdAt: -1 });
-
 
     return res.status(200).json({
       message: "Services fetched successfully",
       totalServices: services.length,
-      services
+      services,
     });
 
   } catch (error) {
-    console.error("Error in getMyServices:", error.message);
+    console.error("Error in getMyServices:", error);
     return res.status(500).json({
-      message: "Internal server error"
+      message: "Internal server error",
     });
   }
 };
-
 module.exports = { addService , updateService ,deleteService,getMyServices};

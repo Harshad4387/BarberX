@@ -67,14 +67,13 @@ const createBooking = async (req, res) => {
       });
     }
 
+    // 1️⃣ Validate barber
     const barber = await Barber.findById(barberId);
     if (!barber) {
-      return res.status(404).json({
-        message: "Barber not found",
-      });
+      return res.status(404).json({ message: "Barber not found" });
     }
 
-    // 2️⃣ Check service
+    // 2️⃣ Validate service
     const service = await BarberService.findOne({
       _id: serviceId,
       barberId,
@@ -87,7 +86,7 @@ const createBooking = async (req, res) => {
       });
     }
 
-    // 3️⃣ Check slot
+    // 3️⃣ Validate slot
     const slot = await Slot.findOne({
       _id: slotId,
       serviceId,
@@ -95,16 +94,22 @@ const createBooking = async (req, res) => {
     });
 
     if (!slot) {
-      return res.status(404).json({
-        message: "Slot not found",
-      });
+      return res.status(404).json({ message: "Slot not found" });
     }
 
     if (slot.isBooked) {
-      return res.status(400).json({
-        message: "Slot already booked",
-      });
+      return res.status(400).json({ message: "Slot already booked" });
     }
+
+    // 🔥 Normalize frontend date (MOST IMPORTANT PART)
+    const inputDate = new Date(date); // ISO string → Date
+
+    const bookingDate = new Date(
+      inputDate.getFullYear(),
+      inputDate.getMonth(),
+      inputDate.getDate(),
+      0, 0, 0, 0
+    );
 
     // 4️⃣ Create booking
     const booking = await Booking.create({
@@ -112,14 +117,15 @@ const createBooking = async (req, res) => {
       barberId,
       serviceId,
       slotId,
-      date,
+
+      date: bookingDate, // ✅ normalized frontend date
+
       startTime: slot.startTime,
       endTime: slot.endTime,
-      price: service.price,
       status: "Booked",
     });
 
-    // 5️⃣ Mark slot as booked
+    // 5️⃣ Lock slot
     slot.isBooked = true;
     await slot.save();
 
@@ -127,15 +133,12 @@ const createBooking = async (req, res) => {
       message: "Booking confirmed successfully",
       booking,
     });
+
   } catch (error) {
-    console.error("Booking error:", error.message);
-    return res.status(500).json({
-      message: "Booking failed",
-    });
+    console.error("Booking error:", error);
+    return res.status(500).json({ message: "Booking failed" });
   }
 };
-
-
 
 
 module.exports = { getSlotsByServiceAndDate ,createBooking};

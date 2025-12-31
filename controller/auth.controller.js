@@ -3,6 +3,7 @@ const Barber = require("../models/Barber.model");
 const bcrypt = require("bcrypt");
 const generatejwt = require("../utilis/generatetoken");
 
+
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -136,8 +137,77 @@ try {
     
 }
 
+const getProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+   
+    const user = await User.findById(userId).select(
+      "name email phone role profile"
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    
+    if (user.role === "customer") {
+      return res.status(200).json({
+        message: "Profile fetched successfully",
+        profile: {
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          profile: user.profile,
+        },
+      });
+    }
+
+    if (user.role === "barber") {
+      const barber = await Barber.findOne({ userId: user._id });
+
+      if (!barber) {
+        return res.status(404).json({
+          message: "Barber profile not found",
+        });
+      }
+
+      return res.status(200).json({
+        message: "Profile fetched successfully",
+        profile: {
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          profile: user.profile,
+          shopName: barber.shopName,
+          shopAddress: barber.shopAddress,
+          gstNumber: barber.gstNumber,
+          openingTime: barber.openingTime,
+          closingTime: barber.closingTime,
+          isOpen: barber.isOpen,
+        },
+      });
+    }
+
+    return res.status(400).json({
+      message: "Invalid user role",
+    });
+
+  } catch (error) {
+    console.error("Profile fetch error:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
 module.exports = {
   login,
   signup,
-  logout
+  logout,
+  getProfile
 };

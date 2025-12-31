@@ -1,14 +1,25 @@
 const Booking = require("../../models/Booking.model");
 
+
 const getTodayAppointments = async (req, res) => {
   try {
     const customerId = req.user.id;
 
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    const now = new Date();
 
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
+    const startOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      0, 0, 0, 0
+    );
+
+    const endOfDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23, 59, 59, 999
+    );
 
     const bookings = await Booking.find({
       customerId,
@@ -18,21 +29,56 @@ const getTodayAppointments = async (req, res) => {
       .populate("barberId", "shopName shopAddress")
       .populate("serviceId", "serviceType price timeRequired")
       .sort({ startTime: 1 });
-      
+
     return res.status(200).json({
       message: "Today's appointments fetched successfully",
       count: bookings.length,
       appointments: bookings.map(b => ({
         _id: b._id,
+        shopName: b.barberId?.shopName,
+        shopAddress: b.barberId?.shopAddress,
+        serviceType: b.serviceId?.serviceType,
+        duration: b.serviceId?.timeRequired,
+        price: b.serviceId?.price,
+        date: b.date,
+        startTime: b.startTime,
+        endTime: b.endTime,
+        status: b.status,
+      })),
+    });
+
+  } catch (error) {
+    console.error("Error fetching today's appointments:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+const getAppointmentHistory = async (req, res) => {
+  try {
+    const customerId = req.user.id;
+
+    const bookings = await Booking.find({
+      customerId,
+    })
+      .populate("barberId", "shopName shopAddress")
+      .populate("serviceId", "serviceType price timeRequired")
+      .sort({ date: -1, startTime: 1 }); // latest first
+
+    return res.status(200).json({
+      message: "Appointment history fetched successfully",
+      count: bookings.length,
+      appointments: bookings.map(b => ({
+        _id: b._id,
 
         // Salon
-        shopName: b.barberId.shopName,
-        shopAddress: b.barberId.shopAddress,
+        shopName: b.barberId?.shopName,
+        shopAddress: b.barberId?.shopAddress,
 
         // Service
-        serviceType: b.serviceId.serviceType,
-        duration: b.serviceId.timeRequired,
-        price: b.serviceId.price,
+        serviceType: b.serviceId?.serviceType,
+        duration: b.serviceId?.timeRequired,
+        price: b.serviceId?.price,
 
         // Timing
         date: b.date,
@@ -40,11 +86,12 @@ const getTodayAppointments = async (req, res) => {
         endTime: b.endTime,
 
         status: b.status,
+        createdAt: b.createdAt,
       })),
     });
 
   } catch (error) {
-    console.error("Error fetching today's appointments:", error.message);
+    console.error("Error fetching appointment history:", error);
     return res.status(500).json({
       message: "Internal server error",
     });
@@ -52,4 +99,4 @@ const getTodayAppointments = async (req, res) => {
 };
 
 
-module.exports = { getTodayAppointments };
+module.exports = { getTodayAppointments , getAppointmentHistory};
